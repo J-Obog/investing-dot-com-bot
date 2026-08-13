@@ -1,7 +1,7 @@
 import re
 
 from config import BotConfig
-from forum import ForumApi, ForumPost, ForumReply
+from forum import ForumApi, ForumPost
 
 
 REPLY_PAGE_SIZE = 100
@@ -13,18 +13,15 @@ class Worker:
         self.config = config
 
     @staticmethod
-    def _count_mentions(
-        items: list[ForumPost] | list[ForumReply],
-        mention: str,
-    ) -> int:
+    def _count_mentions(items: list[ForumPost], mention: str) -> int:
         """Count exact-case, standalone mentions."""
         pattern = re.compile(
             rf"(?<![A-Za-z0-9_@]){re.escape(mention)}(?![A-Za-z0-9_])"
         )
         return sum(len(pattern.findall(item.text)) for item in items)
 
-    def _fetch_all_replies(self, post: ForumPost) -> list[ForumReply]:
-        replies: list[ForumReply] = []
+    def _fetch_all_replies(self, post: ForumPost) -> list[ForumPost]:
+        replies: list[ForumPost] = []
 
         while len(replies) < post.total_replies:
             page = self.forum_api.fetch_post_replies(
