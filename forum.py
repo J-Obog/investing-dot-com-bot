@@ -1,6 +1,7 @@
 import requests
 
 COMMENT_ENDPOINT = "https://api.investing.com/api/forum/post/comment"
+BASE_FORUM_MESSAGES_API = "https://www.investing.com/_next/data/4edcd31/equities"
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -20,6 +21,21 @@ class ForumApi:
             "Origin": "https://www.investing.com",
             "Referer": "https://www.investing.com/",
         })
+
+    def fetch_posts(self, company_slug: str, page: int):
+        url = f"{BASE_FORUM_MESSAGES_API}/{company_slug}-commentary/{page}.json?equity={company_slug}-commentary&equity={page}"
+        response = self.session.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        return (
+            data["pageProps"]
+                ["state"]
+                ["forumStore"]
+                ["comments"]
+                ["_collection"]
+        )
+
 
     def post(self, forum_id: str, content: str):
         self._post_message(forum_id, "", content)
