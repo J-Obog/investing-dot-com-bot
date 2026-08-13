@@ -1,14 +1,22 @@
 import re
 
+from sqlalchemy.orm import Session
+
 from config import BotConfig
 from forum import ForumApi, ForumPost
 
 REPLY_PAGE_SIZE = 100
 
 class Worker:
-    def __init__(self, forum_api: ForumApi, config: BotConfig):
+    def __init__(
+        self,
+        forum_api: ForumApi,
+        config: BotConfig,
+        db: Session,
+    ):
         self.forum_api = forum_api
         self.config = config
+        self.db = db
 
     @staticmethod
     def _count_mentions(items: list[ForumPost], mention: str) -> int:

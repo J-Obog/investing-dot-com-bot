@@ -30,12 +30,18 @@ mention. Construct it with a `ForumApi` and a typed `BotConfig`:
 ```python
 from config import BotConfig
 from forum import ForumApi
+from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
+from sqlalchemy.orm import Session
 from worker import Worker
 
 config = BotConfig.from_json("bot_config.json")
-worker = Worker(ForumApi(session_id), config)
-
-worker.run_iteration()
+engine = create_engine(
+    make_url(database_url).set(drivername="postgresql+psycopg")
+)
+with Session(engine) as db:
+    worker = Worker(ForumApi(session_id), config, db)
+    worker.run_iteration()
 ```
 
 Run a fixed number of worker iterations from the admin CLI:

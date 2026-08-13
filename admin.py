@@ -5,6 +5,9 @@ import os
 import sys
 
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
+from sqlalchemy.orm import Session
 
 from config import BotConfig
 from forum import ForumApi
@@ -56,9 +59,21 @@ def main() -> None:
 
     forum = ForumApi(session_id)
     if getattr(args, "command", None) == "worker":
-        worker = Worker(forum, BotConfig.from_json(args.config))
-        for _ in range(args.iterations):
-            worker.run_iteration()
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            parser.error("DATABASE_URL is not set in the environment or .env file")
+
+        engine = create_engine(
+            make_url(database_url).set(drivername="postgresql+psycopg")
+        )
+        with Session(engine) as db:
+            worker = Worker(
+                forum,
+                BotConfig.from_json(args.config),
+                db,
+            )
+            for _ in range(args.iterations):
+                worker.run_iteration()
         return
 
     if getattr(args, "command", None) == "fetch":
