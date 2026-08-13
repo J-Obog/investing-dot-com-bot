@@ -1,0 +1,14 @@
+{
+  "atBot": "@Hedgey",
+  "commandSymbol": "!", 
+  "validCommands": [
+    "cope"
+  ],
+  "visibleForums": [
+    {
+      "companyId": "16924",
+      "companySlug": "plug-power",  
+      "assetType": "equity"
+    }
+  ]
+}
