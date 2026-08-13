@@ -3,10 +3,10 @@
 CREATE TABLE bot_interactions (
     id                      BIGSERIAL PRIMARY KEY,
     sourceMessageId         VARCHAR(255) NOT NULL,
-    status                  SMALLINT NOT NULL,
-    responseType            TEXT,
+    status                  VARCHAR(20) NOT NULL,
+    responseType            VARCHAR(20) NOT NULL,
     responseText            TEXT,
-    reponseId               VARCHAR(255),
+    responseMessageId       VARCHAR(255),
     model                   TEXT,
     inputTokens             INTEGER,
     outputTokens            INTEGER,

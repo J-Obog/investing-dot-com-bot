@@ -3,9 +3,7 @@ import re
 from config import BotConfig
 from forum import ForumApi, ForumPost
 
-
 REPLY_PAGE_SIZE = 100
-
 
 class Worker:
     def __init__(self, forum_api: ForumApi, config: BotConfig):
