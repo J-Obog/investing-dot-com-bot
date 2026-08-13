@@ -104,9 +104,21 @@ class ForumApi:
             "Referer": "https://www.investing.com/",
         })
 
-    def fetch_posts(self, company_slug: str, page: int = 1) -> list[ForumPost]:
-        url = f"{BASE_FORUM_MESSAGES_API}/{company_slug}-commentary/{page}.json?equity={company_slug}-commentary&equity={page}"
-        response = self.session.get(url, timeout=10)
+    def fetch_posts(
+        self,
+        company_slug: str,
+        asset_type: str,
+        page: int = 1,
+    ) -> list[ForumPost]:
+        url = f"{BASE_FORUM_MESSAGES_API}/{company_slug}-commentary/{page}.json"
+        response = self.session.get(
+            url,
+            params=[
+                (asset_type, f"{company_slug}-commentary"),
+                (asset_type, str(page)),
+            ],
+            timeout=10,
+        )
         response.raise_for_status()
         data = response.json()
 

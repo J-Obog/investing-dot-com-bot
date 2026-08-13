@@ -15,6 +15,7 @@ def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "fetch":
         parser.add_argument("command", choices=["fetch"])
         parser.add_argument("company_slug", help="Company slug to fetch posts for")
+        parser.add_argument("asset_type", help="Asset type query parameter")
     else:
         parser.add_argument("--targetId", required=True, help="ID of the forum target")
         parser.add_argument("--content", required=True, help="Text to post")
@@ -29,7 +30,10 @@ def main() -> None:
 
     forum = ForumApi(session_id)
     if getattr(args, "command", None) == "fetch":
-        result = forum.fetch_posts(company_slug=args.company_slug)
+        result = forum.fetch_posts(
+            company_slug=args.company_slug,
+            asset_type=args.asset_type,
+        )
         print(json.dumps([asdict(post) for post in result], indent=2, default=str))
         return
 
