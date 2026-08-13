@@ -83,7 +83,6 @@ class Worker:
 
     def run_iteration(self) -> int:
         total = 0
-        messages: list[ForumMessage] = []
 
         for forum in self.config.visible_forums:
             posts = self._fetch_posts(forum)
@@ -92,10 +91,11 @@ class Worker:
                 for post in posts
                 if self._is_bot_mention(post, self.config.at_bot)
             ]
-            messages.extend(
+            messages = [
                 self._to_forum_message(post, forum.company_id)
                 for post in mentioned_posts
-            )
+            ]
+            self._insert_messages(messages)
             mentions = len(mentioned_posts)
             total += mentions
             print(
@@ -104,6 +104,5 @@ class Worker:
                 flush=True,
             )
 
-        self._insert_messages(messages)
         print(f"Total {self.config.at_bot} mentions: {total}", flush=True)
         return total
