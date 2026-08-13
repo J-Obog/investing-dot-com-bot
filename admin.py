@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from config import BotConfig
 from forum import ForumApi
-from worker import Worker
+from bot_mention_ingestor import BotMentionIngestor
 
 
 def positive_int(value: str) -> int:
@@ -67,13 +67,13 @@ def main() -> None:
             make_url(database_url).set(drivername="postgresql+psycopg")
         )
         with Session(engine) as db:
-            worker = Worker(
+            ingestor = BotMentionIngestor(
                 forum,
                 BotConfig.from_json(args.config),
                 db,
             )
             for _ in range(args.iterations):
-                worker.run_iteration()
+                ingestor.run_iteration()
         return
 
     if getattr(args, "command", None) == "fetch":

@@ -22,10 +22,10 @@ Other useful commands:
 .\tools\dbmate.exe new migration_name
 ```
 
-## Mention worker
+## Bot mention ingestor
 
-The `Worker` polls every configured forum and counts occurrences of the bot
-mention. Construct it with a `ForumApi` and a typed `BotConfig`:
+The `BotMentionIngestor` polls every configured forum and persists posts that
+mention the bot. Construct it with a `ForumApi` and a typed `BotConfig`:
 
 ```python
 from config import BotConfig
@@ -33,15 +33,15 @@ from forum import ForumApi
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
-from worker import Worker
+from bot_mention_ingestor import BotMentionIngestor
 
 config = BotConfig.from_json("bot_config.json")
 engine = create_engine(
     make_url(database_url).set(drivername="postgresql+psycopg")
 )
 with Session(engine) as db:
-    worker = Worker(ForumApi(session_id), config, db)
-    worker.run_iteration()
+    ingestor = BotMentionIngestor(ForumApi(session_id), config, db)
+    ingestor.run_iteration()
 ```
 
 Run a fixed number of worker iterations from the admin CLI:
