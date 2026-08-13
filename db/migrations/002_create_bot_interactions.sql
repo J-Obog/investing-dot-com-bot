@@ -11,7 +11,7 @@ CREATE TABLE bot_interactions (
     inputTokens             INTEGER,
     outputTokens            INTEGER,
     createdAt               BIGINT NOT NULL,
-    updatedAt               BIGINT NOT NULL
+    updatedAt               BIGINT NOT NULL,
 
     UNIQUE (sourceMessageId)
 );
