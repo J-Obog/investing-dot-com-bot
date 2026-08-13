@@ -30,7 +30,7 @@ def main() -> None:
     forum = ForumApi(session_id)
     if getattr(args, "command", None) == "fetch":
         result = forum.fetch_posts(company_slug=args.company_slug)
-        print(json.dumps([asdict(post) for post in result], indent=2))
+        print(json.dumps([asdict(post) for post in result], indent=2, default=str))
         return
 
     if args.replyTo:

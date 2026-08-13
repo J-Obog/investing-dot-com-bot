@@ -1,4 +1,6 @@
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+import re
 
 import requests
 
@@ -17,7 +19,7 @@ class ForumUser:
     user_id: str
     first_name: str
     last_name: str
-    image: str
+    #image: str
     profile_href: str
     shown_name: str
     nickname: str
@@ -28,7 +30,7 @@ class ForumUser:
             user_id=data["userID"],
             first_name=data["userFirstName"],
             last_name=data["userLastName"],
-            image=data["userImage"],
+            #image=data["userImage"],
             profile_href=data["memberProfileHref"],
             shown_name=data["shownName"],
             nickname=data["nickName"],
@@ -37,36 +39,57 @@ class ForumUser:
 @dataclass
 class ForumPost:
     id: str
-    more_replies: int
-    total_replies: int
     parent_id: str
     text: str
-    date: str
-    image: str
+    date: datetime
+    #image: str
     user: ForumUser
-    is_pro_user: bool
-    user_id: str
     likes: int
     dislikes: int
     replies: list["ForumPost"] = field(default_factory=list)
 
     @classmethod
-    def from_dict(cls, data: dict) -> "ForumPost":
+    def from_dict(
+        cls,
+        data: dict,
+        reference_time: datetime | None = None,
+    ) -> "ForumPost":
+        reference_time = reference_time or datetime.now()
         return cls(
             id=data["id"],
-            more_replies=data["moreReplies"],
-            total_replies=data["totalReplies"],
             parent_id=data["parentId"],
             text=data["text"],
-            date=data["date"],
-            image=data["image"],
+            date=cls._parse_date(data["date"], reference_time),
+            #image=data["image"],
             user=ForumUser.from_dict(data["user"]),
-            is_pro_user=data["isProUser"],
-            user_id=data["userId"],
             likes=data["likes"],
             dislikes=data["dislikes"],
-            replies=[cls.from_dict(reply) for reply in data["replies"]],
+            replies=[
+                cls.from_dict(reply, reference_time) for reply in data["replies"]
+            ],
         )
+
+    @staticmethod
+    def _parse_date(value: str, reference_time: datetime) -> datetime:
+        try:
+            return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            pass
+
+        if value.lower() == "just now":
+            return reference_time
+
+        relative_date = re.fullmatch(
+            r"(\d+)\s+(minute|hour|day)s?\s+ago",
+            value,
+            flags=re.IGNORECASE,
+        )
+        if relative_date:
+            amount = int(relative_date.group(1))
+            unit = relative_date.group(2).lower()
+            return reference_time - timedelta(**{f"{unit}s": amount})
+
+        raise ValueError(f"Unsupported forum date format: {value!r}")
 
 class ForumApi:
     def __init__(self, session_id: str):
