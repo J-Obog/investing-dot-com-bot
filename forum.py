@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 
 import requests
@@ -94,6 +94,86 @@ class ForumPost:
 
         raise ValueError(f"Unsupported forum date format: {value!r}")
 
+
+@dataclass
+class ForumReplyUser:
+    user_id: int
+    first_name: str
+    last_name: str
+    shown_name: str
+    nickname: str
+    company_profile_logo: str
+    local_id: int
+    user_type: str
+    user_status: str
+    user_gender: str
+    image: str
+    profile_href: str
+    company_country_id: int
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ForumReplyUser":
+        return cls(
+            user_id=data["user_ID"],
+            first_name=data["user_firstname"],
+            last_name=data["user_lastname"],
+            shown_name=data["shownName"],
+            nickname=data["nick_name"],
+            company_profile_logo=data["company_profile_logo"],
+            local_id=data["local_ID"],
+            user_type=data["user_type"],
+            user_status=data["user_status"],
+            user_gender=data["user_gender"],
+            image=data["user_image"],
+            profile_href=data["member_profile_href"],
+            company_country_id=data["company_country_ID"],
+        )
+
+
+@dataclass
+class ForumReply:
+    id: int
+    more_replies: int
+    parent_id: int
+    position: int
+    user_id: int
+    text: str
+    date: datetime
+    date_formatted: str
+    image: str
+    image_alt: str
+    likes: int
+    dislikes: int
+    href: str
+    title: str
+    tooltip: str
+    user: ForumReplyUser
+    user_image: str
+    is_pro_user: bool
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ForumReply":
+        return cls(
+            id=data["id"],
+            more_replies=data["more_replies"],
+            parent_id=data["parent_id"],
+            position=data["position"],
+            user_id=data["user_id"],
+            text=data["text"],
+            date=datetime.fromtimestamp(data["date"], tz=timezone.utc),
+            date_formatted=data["date_formatted"],
+            image=data["image"],
+            image_alt=data["image_alt"],
+            likes=data["likes"],
+            dislikes=data["dislikes"],
+            href=data["href"],
+            title=data["title"],
+            tooltip=data["tooltip"],
+            user=ForumReplyUser.from_dict(data["user"]),
+            user_image=data["user_image"],
+            is_pro_user=data["is_pro_user"],
+        )
+
 class ForumApi:
     def __init__(self, session_id: str):
         self.session = requests.Session()
@@ -108,7 +188,12 @@ class ForumApi:
         })
 
 
-    def fetch_post_replies(self, comment_id: str, limit: int, offset: int):
+    def fetch_post_replies(
+        self,
+        comment_id: str,
+        limit: int,
+        offset: int,
+    ) -> list[ForumReply]:
         params = {"commentid": comment_id, "limit": limit, "offset": offset}
         response = self.session.get(
             REPLIES_ENDPOINT,
@@ -116,7 +201,10 @@ class ForumApi:
             timeout=10,
         )
         response.raise_for_status()
-        return response.json()
+        return [
+            ForumReply.from_dict(reply)
+            for reply in response.json()["replies"]
+        ]
 
     def fetch_posts(
         self,
