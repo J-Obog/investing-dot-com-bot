@@ -1,7 +1,10 @@
 import re
 
 from config import BotConfig
-from forum import ForumApi, ForumPost
+from forum import ForumApi, ForumPost, ForumReply
+
+
+REPLY_PAGE_SIZE = 100
 
 
 class Worker:
@@ -10,12 +13,30 @@ class Worker:
         self.config = config
 
     @staticmethod
-    def _count_mentions(posts: list[ForumPost], mention: str) -> int:
+    def _count_mentions(
+        items: list[ForumPost] | list[ForumReply],
+        mention: str,
+    ) -> int:
         """Count exact-case, standalone mentions."""
         pattern = re.compile(
             rf"(?<![A-Za-z0-9_@]){re.escape(mention)}(?![A-Za-z0-9_])"
         )
-        return sum(len(pattern.findall(post.text)) for post in posts)
+        return sum(len(pattern.findall(item.text)) for item in items)
+
+    def _fetch_all_replies(self, post: ForumPost) -> list[ForumReply]:
+        replies: list[ForumReply] = []
+
+        while len(replies) < post.total_replies:
+            page = self.forum_api.fetch_post_replies(
+                comment_id=post.id,
+                limit=min(REPLY_PAGE_SIZE, post.total_replies - len(replies)),
+                offset=len(replies),
+            )
+            if not page:
+                break
+            replies.extend(page)
+
+        return replies
 
     def run_iteration(self) -> int:
         total = 0
@@ -26,10 +47,20 @@ class Worker:
                 asset_type=forum.asset_type,
             )
             mentions = self._count_mentions(posts, self.config.at_bot)
+            reply_count = 0
+            for post in posts:
+                if post.total_replies <= 0:
+                    continue
+
+                replies = self._fetch_all_replies(post)
+                reply_count += len(replies)
+                mentions += self._count_mentions(replies, self.config.at_bot)
+
             total += mentions
             print(
                 f"{forum.company_slug} (company {forum.company_id}): "
-                f"{mentions} mention(s) in {len(posts)} post(s)",
+                f"{mentions} mention(s) in {len(posts)} post(s) "
+                f"and {reply_count} reply/replies",
                 flush=True,
             )
 
