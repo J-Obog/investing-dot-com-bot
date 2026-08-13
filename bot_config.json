@@ -1,9 +1,7 @@
 {
   "atBot": "@Hedgey",
   "commandSymbol": "!", 
-  "validCommands": [
-    "cope"
-  ],
+  "validCommands": [],
   "visibleForums": [
     {
       "companyId": "16924",
