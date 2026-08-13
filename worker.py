@@ -1,5 +1,4 @@
 import re
-import time
 
 from config import BotConfig
 from forum import ForumApi, ForumPost
@@ -36,13 +35,3 @@ class Worker:
 
         print(f"Total {self.config.at_bot} mentions: {total}", flush=True)
         return total
-
-    def run(self, iterations: int | None = None, interval: float = 60) -> None:
-        iteration = 0
-        while iterations is None or iteration < iterations:
-            iteration += 1
-            print(f"Polling iteration {iteration}", flush=True)
-            self.run_iteration()
-
-            if iterations is None or iteration < iterations:
-                time.sleep(interval)

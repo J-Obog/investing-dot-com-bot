@@ -36,6 +36,4 @@ config = BotConfig.from_json("bot_config.json")
 worker = Worker(ForumApi(session_id), config)
 
 worker.run_iteration()
-worker.run(iterations=5, interval=10)
-worker.run()  # Run continuously, polling once per minute.
 ```
