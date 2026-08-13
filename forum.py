@@ -6,6 +6,7 @@ import requests
 
 COMMENT_ENDPOINT = "https://api.investing.com/api/forum/post/comment"
 BASE_FORUM_MESSAGES_API = "https://www.investing.com/_next/data/4edcd31/equities"
+REPLIES_ENDPOINT = "https://api.investing.com/api/forum/replies"
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -39,6 +40,7 @@ class ForumUser:
 @dataclass
 class ForumPost:
     id: str
+    total_replies: int
     parent_id: str
     text: str
     date: datetime
@@ -46,7 +48,7 @@ class ForumPost:
     user: ForumUser
     likes: int
     dislikes: int
-    replies: list["ForumPost"] = field(default_factory=list)
+    #replies: list["ForumPost"] = field(default_factory=list)
 
     @classmethod
     def from_dict(
@@ -62,11 +64,12 @@ class ForumPost:
             date=cls._parse_date(data["date"], reference_time),
             #image=data["image"],
             user=ForumUser.from_dict(data["user"]),
+            total_replies=data["totalReplies"],
             likes=data["likes"],
             dislikes=data["dislikes"],
-            replies=[
-                cls.from_dict(reply, reference_time) for reply in data["replies"]
-            ],
+            #replies=[
+            #    cls.from_dict(reply, reference_time) for reply in data["replies"]
+            #],
         )
 
     @staticmethod
@@ -103,6 +106,17 @@ class ForumApi:
             "Origin": "https://www.investing.com",
             "Referer": "https://www.investing.com/",
         })
+
+
+    def fetch_post_replies(self, comment_id: str, limit: int, offset: int):
+        params = {"commentid": comment_id, "limit": limit, "offset": offset}
+        response = self.session.get(
+            REPLIES_ENDPOINT,
+            params,
+            timeout=10,
+        )
+        response.raise_for_status()
+        return response.json()
 
     def fetch_posts(
         self,
