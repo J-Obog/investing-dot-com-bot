@@ -37,3 +37,11 @@ worker = Worker(ForumApi(session_id), config)
 
 worker.run_iteration()
 ```
+
+Run a fixed number of worker iterations from the admin CLI:
+
+```powershell
+uv run python admin.py worker 5
+```
+
+Use `--config path/to/config.json` to load a different bot configuration.

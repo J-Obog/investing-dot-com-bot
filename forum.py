@@ -4,8 +4,9 @@ import re
 
 import requests
 
+BUILD_NO = "758028f"
 COMMENT_ENDPOINT = "https://api.investing.com/api/forum/post/comment"
-BASE_FORUM_MESSAGES_API = "https://www.investing.com/_next/data/4edcd31/equities"
+BASE_FORUM_MESSAGES_API = f"https://www.investing.com/_next/data/{BUILD_NO}/equities"
 REPLIES_ENDPOINT = "https://api.investing.com/api/forum/replies"
 
 USER_AGENT = (
@@ -74,17 +75,19 @@ class ForumPost:
 
     @staticmethod
     def _parse_date(value: str, reference_time: datetime) -> datetime:
+        normalized_value = value.strip()
+
         try:
-            return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+            return datetime.strptime(normalized_value, "%Y-%m-%d %H:%M:%S")
         except ValueError:
             pass
 
-        if value.lower() == "just now":
+        if normalized_value.casefold() in {"just now", "_just_now"}:
             return reference_time
 
         relative_date = re.fullmatch(
             r"(\d+)\s+(minute|hour|day)s?\s+ago",
-            value,
+            normalized_value,
             flags=re.IGNORECASE,
         )
         if relative_date:

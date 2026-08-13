@@ -6,7 +6,16 @@ import sys
 
 from dotenv import load_dotenv
 
+from config import BotConfig
 from forum import ForumApi
+from worker import Worker
+
+
+def positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be at least 1")
+    return parsed
 
 
 def main() -> None:
@@ -21,6 +30,18 @@ def main() -> None:
         parser.add_argument("comment_id", help="ID of the comment")
         parser.add_argument("--limit", type=int, default=10)
         parser.add_argument("--offset", type=int, default=0)
+    elif len(sys.argv) > 1 and sys.argv[1] == "worker":
+        parser.add_argument("command", choices=["worker"])
+        parser.add_argument(
+            "iterations",
+            type=positive_int,
+            help="Number of worker iterations to run",
+        )
+        parser.add_argument(
+            "--config",
+            default="bot_config.json",
+            help="Path to the bot configuration file (default: bot_config.json)",
+        )
     else:
         parser.add_argument("--targetId", required=True, help="ID of the forum target")
         parser.add_argument("--content", required=True, help="Text to post")
@@ -34,6 +55,12 @@ def main() -> None:
         parser.error("FORUM_SESS_ID is not set in the environment or .env file")
 
     forum = ForumApi(session_id)
+    if getattr(args, "command", None) == "worker":
+        worker = Worker(forum, BotConfig.from_json(args.config))
+        for _ in range(args.iterations):
+            worker.run_iteration()
+        return
+
     if getattr(args, "command", None) == "fetch":
         result = forum.fetch_posts(
             company_slug=args.company_slug,

@@ -1,11 +1,16 @@
 {
-  "atBot": "@Hedgey",
+  "atBot": "$Hedgey",
   "commandSymbol": "!", 
   "validCommands": [],
   "visibleForums": [
     {
       "companyId": "16924",
       "companySlug": "plug-power",  
+      "assetType": "equity"
+    },
+    {
+      "companyId": "8181",
+      "companySlug": "jabil-circuit",  
       "assetType": "equity"
     }
   ]
