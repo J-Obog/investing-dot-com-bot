@@ -35,13 +35,13 @@ def main() -> None:
 
     if args.replyTo:
         result = forum.reply(
-            forum_id=args.targetId,
+            company_id=args.targetId,
             parent_message_id=args.replyTo,
             content=args.content,
         )
     else:
         result = forum.post(
-            forum_id=args.targetId,
+            company_id=args.targetId,
             content=args.content,
         )
     print(json.dumps(result, indent=2))

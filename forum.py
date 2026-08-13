@@ -97,17 +97,17 @@ class ForumApi:
         return [ForumPost.from_dict(post) for post in posts]
 
 
-    def post(self, forum_id: str, content: str):
-        self._post_message(forum_id, "", content)
+    def post(self, company_id: str, content: str):
+        self._post_message(company_id, "", content)
 
-    def reply(self, forum_id: str, parent_message_id: str, content: str):
-        self._post_message(forum_id, parent_message_id, content)
+    def reply(self, company_id: str, parent_message_id: str, content: str):
+        self._post_message(company_id, parent_message_id, content)
 
-    def _post_message(self, forum_id: str, parent_message_id: str, content: str):
+    def _post_message(self, company_id: str, parent_message_id: str, content: str):
         payload = {
             "platform": "desktop",
             "typeid": "5",
-            "targetId": forum_id,
+            "targetId": company_id,
             "parentId": parent_message_id,
             "image": "",
             "userAgent": USER_AGENT,
