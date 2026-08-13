@@ -21,12 +21,18 @@ class ForumApi:
             "Referer": "https://www.investing.com/",
         })
 
-    def post(self, forum_id: str, content: str, parent_id: str = ""):
+    def post(self, forum_id: str, content: str):
+        self._post_message(forum_id, "", content)
+
+    def reply(self, forum_id: str, parent_message_id: str, content: str):
+        self._post_message(forum_id, parent_message_id, content)
+
+    def _post_message(self, forum_id: str, parent_message_id: str, content: str):
         payload = {
             "platform": "desktop",
             "typeid": "5",
             "targetId": forum_id,
-            "parentId": parent_id,
+            "parentId": parent_message_id,
             "image": "",
             "userAgent": USER_AGENT,
             "permalink":"",
@@ -39,9 +45,5 @@ class ForumApi:
             timeout=10,
         )
 
-        print("STATUS:", response.status_code)
-        print("BODY:", response.text)
-
         response.raise_for_status()
-
         return response.json()
