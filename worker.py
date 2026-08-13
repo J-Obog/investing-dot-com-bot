@@ -4,18 +4,18 @@ from config import BotConfig
 from forum import ForumApi, ForumPost
 
 
-def count_mentions(posts: list[ForumPost], mention: str) -> int:
-    """Count exact-case, standalone mentions."""
-    pattern = re.compile(
-        rf"(?<![A-Za-z0-9_@]){re.escape(mention)}(?![A-Za-z0-9_])"
-    )
-    return sum(len(pattern.findall(post.text)) for post in posts)
-
-
 class Worker:
     def __init__(self, forum_api: ForumApi, config: BotConfig):
         self.forum_api = forum_api
         self.config = config
+
+    @staticmethod
+    def _count_mentions(posts: list[ForumPost], mention: str) -> int:
+        """Count exact-case, standalone mentions."""
+        pattern = re.compile(
+            rf"(?<![A-Za-z0-9_@]){re.escape(mention)}(?![A-Za-z0-9_])"
+        )
+        return sum(len(pattern.findall(post.text)) for post in posts)
 
     def run_iteration(self) -> int:
         total = 0
@@ -25,7 +25,7 @@ class Worker:
                 company_slug=forum.company_slug,
                 asset_type=forum.asset_type,
             )
-            mentions = count_mentions(posts, self.config.at_bot)
+            mentions = self._count_mentions(posts, self.config.at_bot)
             total += mentions
             print(
                 f"{forum.company_slug} (company {forum.company_id}): "
