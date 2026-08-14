@@ -1,0 +1,108 @@
+import time
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from config import BotConfig
+from db import (
+    BotInteraction,
+    ForumMessage,
+    InteractionStatus,
+    ResponseType,
+)
+from response_generator import ResponseGenerator
+
+class BotResponseWorker:
+    def __init__(self, config: BotConfig, db: Session):
+        self.config = config
+        self.db = db
+        self.response_generator = ResponseGenerator()
+
+    def _fetch_messages(self) -> list[ForumMessage]:
+        processed_message = (
+            select(BotInteraction.id)
+            .where(BotInteraction.source_message_id == ForumMessage.id)
+            .exists()
+        )
+        return list(
+            self.db.scalars(
+                select(ForumMessage).where(~processed_message)
+            )
+        )
+
+    def _should_reply(self, message: ForumMessage) -> bool:
+        return self.config.at_bot in message.content
+
+    def _determine_response_type(self, message: ForumMessage) -> ResponseType:
+        if self.config.at_bot not in message.content:
+            return ResponseType.CONVERSATIONAL
+
+        _, content_after_mention = message.content.split(
+            self.config.at_bot,
+            maxsplit=1,
+        )
+        if content_after_mention.lstrip().startswith(self.config.command_symbol):
+            return ResponseType.COMMAND
+        return ResponseType.CONVERSATIONAL
+
+    def _generate_pending_interactions(self) -> int:
+        interactions: list[BotInteraction] = []
+
+        for message in self._fetch_messages():
+            response_type = self._determine_response_type(message)
+            now = int(time.time())
+            interactions.append(
+                BotInteraction(
+                    source_message_id=message.id,
+                    status=InteractionStatus.AWAITING_REPLY,
+                    response_type=response_type,
+                    created_at=now,
+                    updated_at=now,
+                )
+            )
+
+        self.db.add_all(interactions)
+        self.db.commit()
+        return len(interactions)
+
+    def _generate_responses(self) -> int:
+        statement = (
+            select(BotInteraction, ForumMessage)
+            .join(
+                ForumMessage,
+                ForumMessage.id == BotInteraction.source_message_id,
+            )
+            .where(
+                BotInteraction.status == InteractionStatus.AWAITING_REPLY,
+                BotInteraction.response_text.is_(None),
+            )
+        )
+        pending: list[tuple[BotInteraction, ForumMessage]] = list(
+            self.db.execute(statement).tuples()
+        )
+
+        now = int(time.time())
+        for interaction, message in pending:
+            if not self._should_reply(message):
+                interaction.status = InteractionStatus.SKIPPED
+                interaction.updated_at = now
+                continue
+
+            interaction.response_text = self.response_generator.generate_response(
+                message,
+                interaction.response_type,
+            )
+            interaction.updated_at = now
+
+        self.db.commit()
+        return len(pending)
+
+    def run_iteration(self) -> int:
+        pending_count = self._generate_pending_interactions()
+        response_count = self._generate_responses()
+        print(
+            f"Queued {pending_count} interaction(s); "
+            f"generated {response_count} response(s)",
+            flush=True,
+        )
+        return response_count

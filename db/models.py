@@ -7,14 +7,14 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class InteractionStatus(StrEnum):
-    PENDING = "pending"
-    COMPLETED = "completed"
-    FAILED = "failed"
+    AWAITING_REPLY = "awaiting_reply"
+    REPLIED = "replied"
+    SKIPPED = "skipped"
 
 
 class ResponseType(StrEnum):
-    POST = "post"
-    REPLY = "reply"
+    COMMAND = "command"
+    CONVERSATIONAL = "conversational"
 
 
 def enum_values(enum_class: type[StrEnum]) -> list[str]:
