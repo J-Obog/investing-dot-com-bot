@@ -10,7 +10,8 @@ from forum import ForumApi, ForumPost
 
 REPLY_PAGE_SIZE = 100
 
-class BotMentionIngestor:
+
+class MentionIngestor:
     def __init__(
         self,
         forum_api: ForumApi,

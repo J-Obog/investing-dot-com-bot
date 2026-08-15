@@ -11,8 +11,7 @@ from sqlalchemy.orm import Session
 
 from config import BotConfig
 from forum import ForumApi
-from bot_mention_ingestor import BotMentionIngestor
-from bot_response_worker import BotResponseWorker
+from workers import MentionIngestor, ResponseWorker
 
 
 def positive_int(value: str) -> int:
@@ -67,7 +66,7 @@ def main() -> None:
             make_url(database_url).set(drivername="postgresql+psycopg")
         )
         with Session(engine) as db:
-            worker = BotResponseWorker(
+            worker = ResponseWorker(
                 ForumApi(session_id),
                 BotConfig.from_json(args.config),
                 db,
@@ -90,7 +89,7 @@ def main() -> None:
             make_url(database_url).set(drivername="postgresql+psycopg")
         )
         with Session(engine) as db:
-            ingestor = BotMentionIngestor(
+            ingestor = MentionIngestor(
                 forum,
                 BotConfig.from_json(args.config),
                 db,

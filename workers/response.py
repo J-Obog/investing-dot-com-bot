@@ -16,7 +16,7 @@ from response_generators import AIResponseGenerator, CommandResponseGenerator
 REPLY_DELAY_SECONDS = 3
 
 
-class BotResponseWorker:
+class ResponseWorker:
     def __init__(self, forum_api: ForumApi, config: BotConfig, db: Session):
         self.forum_api = forum_api
         self.config = config
