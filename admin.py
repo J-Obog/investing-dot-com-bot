@@ -21,6 +21,13 @@ def positive_int(value: str) -> int:
     return parsed
 
 
+def nonnegative_float(value: str) -> float:
+    parsed = float(value)
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("cannot be negative")
+    return parsed
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Manage the forum API.")
 
@@ -33,12 +40,19 @@ def main() -> None:
         parser.add_argument("comment_id", help="ID of the comment")
         parser.add_argument("--limit", type=int, default=10)
         parser.add_argument("--offset", type=int, default=0)
-    elif len(sys.argv) > 1 and sys.argv[1] in {"worker", "response-worker"}:
-        parser.add_argument("command", choices=[sys.argv[1]])
+    elif len(sys.argv) > 1 and sys.argv[1] == "worker":
+        parser.add_argument("command", choices=["worker"])
+        parser.add_argument("worker_name", choices=["response", "ingestion"])
         parser.add_argument(
-            "iterations",
+            "--iterations",
             type=positive_int,
-            help="Number of worker iterations to run",
+            help="Number of iterations to run; omit to run indefinitely",
+        )
+        parser.add_argument(
+            "--wait-time",
+            type=nonnegative_float,
+            default=10,
+            help="Seconds between iterations when running indefinitely",
         )
         parser.add_argument(
             "--config",
@@ -53,7 +67,7 @@ def main() -> None:
     args = parser.parse_args()
 
     load_dotenv()
-    if getattr(args, "command", None) == "response-worker":
+    if getattr(args, "command", None) == "worker":
         session_id = os.getenv("FORUM_SESS_ID")
         if not session_id:
             parser.error("FORUM_SESS_ID is not set in the environment or .env file")
@@ -66,13 +80,17 @@ def main() -> None:
             make_url(database_url).set(drivername="postgresql+psycopg")
         )
         with Session(engine) as db:
-            worker = ResponseWorker(
+            worker_class = (
+                ResponseWorker
+                if args.worker_name == "response"
+                else MentionIngestor
+            )
+            worker = worker_class(
                 ForumApi(session_id),
                 BotConfig.from_json(args.config),
                 db,
             )
-            for _ in range(args.iterations):
-                worker.run_iteration()
+            worker.run(args.iterations, args.wait_time)
         return
 
     session_id = os.getenv("FORUM_SESS_ID")
@@ -80,24 +98,6 @@ def main() -> None:
         parser.error("FORUM_SESS_ID is not set in the environment or .env file")
 
     forum = ForumApi(session_id)
-    if getattr(args, "command", None) == "worker":
-        database_url = os.getenv("DATABASE_URL")
-        if not database_url:
-            parser.error("DATABASE_URL is not set in the environment or .env file")
-
-        engine = create_engine(
-            make_url(database_url).set(drivername="postgresql+psycopg")
-        )
-        with Session(engine) as db:
-            ingestor = MentionIngestor(
-                forum,
-                BotConfig.from_json(args.config),
-                db,
-            )
-            for _ in range(args.iterations):
-                ingestor.run_iteration()
-        return
-
     if getattr(args, "command", None) == "fetch":
         result = forum.fetch_posts(
             company_slug=args.company_slug,

@@ -8,7 +8,11 @@
     },
     {
       "name": "quote",
-      "description": "Usage: !quote TICKER - Gets a quote for a stock"
+      "description": "!quote TICKER - Gets a quote for a stock"
+    },
+    {
+      "name": "indices",
+      "description": "!indices - Shows today's performance for major U.S. stock indices"
     }
   ],
   "visibleForums": [

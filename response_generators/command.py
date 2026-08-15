@@ -5,6 +5,13 @@ import yfinance as yf
 
 from config import BotConfig
 
+US_INDICES = (
+    ("SPX", "^GSPC"),
+    ("NDX", "^NDX"),
+    ("DJI", "^DJI"),
+    ("RUT", "^RUT"),
+)
+
 
 class CommandResponseGenerator:
     def __init__(self, config: BotConfig):
@@ -17,6 +24,8 @@ class CommandResponseGenerator:
             return self._generate_help_response()
         if command == "quote":
             return self._generate_quote_response(params)
+        if command == "indices":
+            return self._generate_indices_response(params)
 
         return f"Unknown command: {self.config.command_symbol}{command}"
 
@@ -75,6 +84,34 @@ class CommandResponseGenerator:
             f"O: ${open_price:.2f} H: ${high:.2f} "
             f"L: ${low:.2f} Vol: {self._format_volume(int(volume))}"
         )
+
+    def _generate_indices_response(self, params: list[str]) -> str:
+        if params:
+            return f"Usage: {self.config.command_symbol}indices"
+
+        indices = []
+        try:
+            for name, ticker in US_INDICES:
+                info = yf.Ticker(ticker).fast_info
+                price = float(info.last_price)
+                previous_close = float(info.previous_close)
+                if not math.isfinite(price) or not math.isfinite(previous_close):
+                    raise ValueError(f"Incomplete market data for {ticker}")
+                if previous_close == 0:
+                    raise ValueError(f"Invalid previous close for {ticker}")
+
+                percent_change = (price - previous_close) / previous_close * 100
+                indicator = (
+                    "🟢" if percent_change > 0
+                    else "🔴" if percent_change < 0
+                    else "⚪"
+                )
+                indices.append(f"{name} {indicator} {percent_change:+.2f}%")
+        except Exception as error:
+            print(f"Index lookup failed: {error}", flush=True)
+            return "Index data is currently unavailable."
+
+        return f"🇺🇸 {' | '.join(indices)}"
 
     @staticmethod
     def _format_signed_currency(value: float) -> str:

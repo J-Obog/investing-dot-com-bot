@@ -7,11 +7,12 @@ from sqlalchemy.orm import Session
 from config import BotConfig, ForumConfig
 from db import ForumMessage
 from forum import ForumApi, ForumPost
+from workers.base import Worker
 
 REPLY_PAGE_SIZE = 100
 
 
-class MentionIngestor:
+class MentionIngestor(Worker):
     def __init__(
         self,
         forum_api: ForumApi,

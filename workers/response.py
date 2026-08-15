@@ -12,11 +12,12 @@ from db import (
 )
 from forum import ForumApi
 from response_generators import AIResponseGenerator, CommandResponseGenerator
+from workers.base import Worker
 
 REPLY_DELAY_SECONDS = 3
 
 
-class ResponseWorker:
+class ResponseWorker(Worker):
     def __init__(self, forum_api: ForumApi, config: BotConfig, db: Session):
         self.forum_api = forum_api
         self.config = config
