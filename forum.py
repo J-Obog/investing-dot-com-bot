@@ -187,5 +187,6 @@ class ForumApi:
             timeout=30,
         )
 
+        print(f"Forum API raw response: {response.text}", flush=True)
         response.raise_for_status()
         return response.json()

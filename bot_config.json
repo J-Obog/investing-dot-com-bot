@@ -8,7 +8,7 @@
     },
     {
       "name": "quote",
-      "description": "'!quote <ticker>' - Gets a quote for a stock"
+      "description": "Usage: !quote TICKER - Gets a quote for a stock"
     }
   ],
   "visibleForums": [

@@ -40,8 +40,8 @@ class ResponseGenerator:
         return parts[0].casefold(), parts[1:]
 
     def _generate_help_response(self) -> str:
-        commands = "\n".join(
+        commands = " | ".join(
             f"{self.config.command_symbol}{command.name} - {command.description}"
             for command in self.config.valid_commands
         )
-        return f"Available commands:\n{commands}"
+        return f"Available commands: {commands}"
