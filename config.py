@@ -21,10 +21,23 @@ class ForumConfig:
 
 
 @dataclass(frozen=True)
+class CommandConfig:
+    name: str
+    description: str
+
+    @classmethod
+    def from_dict(cls, data: dict) -> CommandConfig:
+        return cls(
+            name=data["name"],
+            description=data["description"],
+        )
+
+
+@dataclass(frozen=True)
 class BotConfig:
     at_bot: str
     command_symbol: str
-    valid_commands: list[str]
+    valid_commands: list[CommandConfig]
     visible_forums: list[ForumConfig]
 
     @classmethod
@@ -32,7 +45,10 @@ class BotConfig:
         return cls(
             at_bot=data["atBot"],
             command_symbol=data["commandSymbol"],
-            valid_commands=data["validCommands"],
+            valid_commands=[
+                CommandConfig.from_dict(command)
+                for command in data["validCommands"]
+            ],
             visible_forums=[
                 ForumConfig.from_dict(forum) for forum in data["visibleForums"]
             ],

@@ -1,7 +1,16 @@
 {
   "atBot": "$Hedgey",
   "commandSymbol": "!", 
-  "validCommands": [],
+  "validCommands": [
+    {
+      "name": "help",
+      "description": "Lists avaliable commands"
+    },
+    {
+      "name": "quote",
+      "description": "'!quote <ticker>' - Gets a quote for a stock"
+    }
+  ],
   "visibleForums": [
     {
       "companyId": "16924",

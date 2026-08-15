@@ -164,10 +164,10 @@ class ForumApi:
 
 
     def post(self, company_id: str, content: str):
-        self._post_message(company_id, "", content)
+        return self._post_message(company_id, "", content)
 
     def reply(self, company_id: str, parent_message_id: str, content: str):
-        self._post_message(company_id, parent_message_id, content)
+        return self._post_message(company_id, parent_message_id, content)
 
     def _post_message(self, company_id: str, parent_message_id: str, content: str):
         payload = {
@@ -184,7 +184,7 @@ class ForumApi:
         response = self.session.post(
             COMMENT_ENDPOINT,
             json=payload,
-            timeout=10,
+            timeout=30,
         )
 
         response.raise_for_status()

@@ -51,3 +51,13 @@ uv run python admin.py worker 5
 ```
 
 Use `--config path/to/config.json` to load a different bot configuration.
+
+## Bot response worker
+
+Run a fixed number of response-worker iterations from the admin CLI:
+
+```powershell
+uv run python admin.py response-worker 5
+```
+
+This worker creates pending interactions and generates their response text.

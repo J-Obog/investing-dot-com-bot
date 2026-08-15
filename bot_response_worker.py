@@ -10,13 +10,15 @@ from db import (
     InteractionStatus,
     ResponseType,
 )
+from forum import ForumApi
 from response_generator import ResponseGenerator
 
 class BotResponseWorker:
-    def __init__(self, config: BotConfig, db: Session):
+    def __init__(self, forum_api: ForumApi, config: BotConfig, db: Session):
+        self.forum_api = forum_api
         self.config = config
         self.db = db
-        self.response_generator = ResponseGenerator()
+        self.response_generator = ResponseGenerator(config)
 
     def _fetch_messages(self) -> list[ForumMessage]:
         processed_message = (
@@ -81,21 +83,49 @@ class BotResponseWorker:
             self.db.execute(statement).tuples()
         )
 
-        now = int(time.time())
+        response_count = 0
         for interaction, message in pending:
+            now = int(time.time())
             if not self._should_reply(message):
                 interaction.status = InteractionStatus.SKIPPED
                 interaction.updated_at = now
+                self.db.commit()
                 continue
 
-            interaction.response_text = self.response_generator.generate_response(
+            response_text = self.response_generator.generate_response(
                 message,
                 interaction.response_type,
             )
+            result = self.forum_api.reply(
+                company_id=message.company_id,
+                parent_message_id=message.id,
+                content=response_text,
+            )
+            interaction.response_text = response_text
+            interaction.response_message_id = self._get_response_message_id(result)
+            interaction.status = InteractionStatus.REPLIED
             interaction.updated_at = now
+            self.db.commit()
+            response_count += 1
 
-        self.db.commit()
-        return len(pending)
+        return response_count
+
+    @staticmethod
+    def _get_response_message_id(result: object) -> str | None:
+        if not isinstance(result, dict):
+            return None
+
+        for key in ("id", "messageId", "commentId"):
+            value = result.get(key)
+            if value is not None:
+                return str(value)
+
+        for key in ("data", "comment", "message"):
+            nested_id = BotResponseWorker._get_response_message_id(result.get(key))
+            if nested_id is not None:
+                return nested_id
+
+        return None
 
     def run_iteration(self) -> int:
         pending_count = self._generate_pending_interactions()

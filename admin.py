@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from config import BotConfig
 from forum import ForumApi
 from bot_mention_ingestor import BotMentionIngestor
+from bot_response_worker import BotResponseWorker
 
 
 def positive_int(value: str) -> int:
@@ -33,8 +34,8 @@ def main() -> None:
         parser.add_argument("comment_id", help="ID of the comment")
         parser.add_argument("--limit", type=int, default=10)
         parser.add_argument("--offset", type=int, default=0)
-    elif len(sys.argv) > 1 and sys.argv[1] == "worker":
-        parser.add_argument("command", choices=["worker"])
+    elif len(sys.argv) > 1 and sys.argv[1] in {"worker", "response-worker"}:
+        parser.add_argument("command", choices=[sys.argv[1]])
         parser.add_argument(
             "iterations",
             type=positive_int,
@@ -53,6 +54,28 @@ def main() -> None:
     args = parser.parse_args()
 
     load_dotenv()
+    if getattr(args, "command", None) == "response-worker":
+        session_id = os.getenv("FORUM_SESS_ID")
+        if not session_id:
+            parser.error("FORUM_SESS_ID is not set in the environment or .env file")
+
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            parser.error("DATABASE_URL is not set in the environment or .env file")
+
+        engine = create_engine(
+            make_url(database_url).set(drivername="postgresql+psycopg")
+        )
+        with Session(engine) as db:
+            worker = BotResponseWorker(
+                ForumApi(session_id),
+                BotConfig.from_json(args.config),
+                db,
+            )
+            for _ in range(args.iterations):
+                worker.run_iteration()
+        return
+
     session_id = os.getenv("FORUM_SESS_ID")
     if not session_id:
         parser.error("FORUM_SESS_ID is not set in the environment or .env file")
