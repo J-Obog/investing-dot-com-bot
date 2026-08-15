@@ -13,6 +13,9 @@ from db import (
 from forum import ForumApi
 from response_generator import ResponseGenerator
 
+REPLY_DELAY_SECONDS = 3
+
+
 class BotResponseWorker:
     def __init__(self, forum_api: ForumApi, config: BotConfig, db: Session):
         self.forum_api = forum_api
@@ -96,36 +99,20 @@ class BotResponseWorker:
                 message,
                 interaction.response_type,
             )
-            result = self.forum_api.reply(
+            if response_count:
+                time.sleep(REPLY_DELAY_SECONDS)
+            self.forum_api.reply(
                 company_id=message.company_id,
                 parent_message_id=message.id,
                 content=response_text,
             )
             interaction.response_text = response_text
-            interaction.response_message_id = self._get_response_message_id(result)
             interaction.status = InteractionStatus.REPLIED
             interaction.updated_at = now
             self.db.commit()
             response_count += 1
 
         return response_count
-
-    @staticmethod
-    def _get_response_message_id(result: object) -> str | None:
-        if not isinstance(result, dict):
-            return None
-
-        for key in ("id", "messageId", "commentId"):
-            value = result.get(key)
-            if value is not None:
-                return str(value)
-
-        for key in ("data", "comment", "message"):
-            nested_id = BotResponseWorker._get_response_message_id(result.get(key))
-            if nested_id is not None:
-                return nested_id
-
-        return None
 
     def run_iteration(self) -> int:
         pending_count = self._generate_pending_interactions()

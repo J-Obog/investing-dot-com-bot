@@ -127,7 +127,7 @@ def main() -> None:
             company_id=args.targetId,
             content=args.content,
         )
-    print(json.dumps(result, indent=2))
+    print(json.dumps(asdict(result), indent=2, default=str))
 
 
 if __name__ == "__main__":

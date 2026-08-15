@@ -103,6 +103,16 @@ class ForumPost:
 
         raise ValueError(f"Unsupported forum date format: {value!r}")
 
+
+@dataclass
+class ForumPostResponse:
+    status: str
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ForumPostResponse":
+        return cls(status=data["status"])
+
+
 class ForumApi:
     def __init__(self, session_id: str):
         self.session = requests.Session()
@@ -163,13 +173,23 @@ class ForumApi:
         return [ForumPost.from_dict(post) for post in posts]
 
 
-    def post(self, company_id: str, content: str):
+    def post(self, company_id: str, content: str) -> ForumPostResponse:
         return self._post_message(company_id, "", content)
 
-    def reply(self, company_id: str, parent_message_id: str, content: str):
+    def reply(
+        self,
+        company_id: str,
+        parent_message_id: str,
+        content: str,
+    ) -> ForumPostResponse:
         return self._post_message(company_id, parent_message_id, content)
 
-    def _post_message(self, company_id: str, parent_message_id: str, content: str):
+    def _post_message(
+        self,
+        company_id: str,
+        parent_message_id: str,
+        content: str,
+    ) -> ForumPostResponse:
         payload = {
             "platform": "desktop",
             "typeid": "5",
@@ -189,4 +209,4 @@ class ForumApi:
 
         print(f"Forum API raw response: {response.text}", flush=True)
         response.raise_for_status()
-        return response.json()
+        return ForumPostResponse.from_dict(response.json())
