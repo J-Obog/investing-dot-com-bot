@@ -12,7 +12,6 @@ US_INDICES = (
     ("RUT", "^RUT"),
 )
 
-
 class CommandResponseGenerator:
     def __init__(self, config: BotConfig):
         self.config = config
@@ -76,10 +75,10 @@ class CommandResponseGenerator:
 
         change = price - previous_close
         percent_change = change / previous_close * 100
-        indicator = "📈 " if change > 0 else "📉 " if change < 0 else ""
+        indicator = "🟢" if change > 0 else "🔴" if change < 0 else "⚪"
 
         return (
-            f"{indicator}{ticker} — ${price:.2f} "
+            f"{indicator} {ticker} — ${price:.2f} "
             f"{self._format_signed_currency(change)} ({percent_change:+.2f}%) | "
             f"O: ${open_price:.2f} H: ${high:.2f} "
             f"L: ${low:.2f} Vol: {self._format_volume(int(volume))}"

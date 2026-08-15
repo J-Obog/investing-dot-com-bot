@@ -1,12 +1,9 @@
 import os
+from pathlib import Path
 
 from groq import Groq
 
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
-SYSTEM_PROMPT = (
-    "You are a helpful assistant responding to users on a stock market forum. "
-    "Keep your response concise and use a single line of plain text."
-)
 
 
 class AIResponseGenerator:
@@ -17,11 +14,14 @@ class AIResponseGenerator:
     ):
         self.client = client or Groq(api_key=os.environ.get("GROQ_API_KEY"))
         self.model = model
+        self.system_prompt = Path(__file__).with_name(
+            "system_prompt.txt"
+        ).read_text(encoding="utf-8")
 
     def generate(self, content: str) -> str:
         completion = self.client.chat.completions.create(
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": content},
             ],
             model=self.model,
