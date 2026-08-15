@@ -1,6 +1,7 @@
 from collections.abc import Callable
 import re
 
+from ai_response import AIResponseGenerator
 from config import BotConfig
 from db import ForumMessage, ResponseType
 from market_data import MarketQuote, fetch_market_quote
@@ -11,9 +12,11 @@ class ResponseGenerator:
         self,
         config: BotConfig,
         quote_fetcher: Callable[[str], MarketQuote] = fetch_market_quote,
+        ai_response_generator: AIResponseGenerator | None = None,
     ):
         self.config = config
         self.quote_fetcher = quote_fetcher
+        self.ai_response_generator = ai_response_generator
 
     def generate_response(
         self,
@@ -23,7 +26,9 @@ class ResponseGenerator:
         if response_type is ResponseType.COMMAND:
             return self._generate_command_response(message)
 
-        return "Hey, I've been watching this stock too!"
+        if self.ai_response_generator is None:
+            self.ai_response_generator = AIResponseGenerator()
+        return self.ai_response_generator.generate(message.content)
 
     def _generate_command_response(self, message: ForumMessage) -> str:
         command, params = self._extract_command(message)
