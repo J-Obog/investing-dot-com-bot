@@ -18,15 +18,15 @@ class AIResponseGenerator:
         self.client = client or Groq(api_key=os.environ.get("GROQ_API_KEY"))
         self.model = model
 
-    def generate(self, user_message: str) -> str:
+    def generate(self, content: str) -> str:
         completion = self.client.chat.completions.create(
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
+                {"role": "user", "content": content},
             ],
             model=self.model,
         )
-        content = completion.choices[0].message.content
-        if not content:
+        response_content = completion.choices[0].message.content
+        if not response_content:
             raise ValueError("Groq returned an empty response")
-        return " ".join(content.split())
+        return " ".join(response_content.split())

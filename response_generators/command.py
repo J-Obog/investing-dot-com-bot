@@ -1,37 +1,17 @@
-from collections.abc import Callable
+import math
 import re
 
-from ai_response import AIResponseGenerator
+import yfinance as yf
+
 from config import BotConfig
-from db import ForumMessage, ResponseType
-from market_data import MarketQuote, fetch_market_quote
 
 
-class ResponseGenerator:
-    def __init__(
-        self,
-        config: BotConfig,
-        quote_fetcher: Callable[[str], MarketQuote] = fetch_market_quote,
-        ai_response_generator: AIResponseGenerator | None = None,
-    ):
+class CommandResponseGenerator:
+    def __init__(self, config: BotConfig):
         self.config = config
-        self.quote_fetcher = quote_fetcher
-        self.ai_response_generator = ai_response_generator
 
-    def generate_response(
-        self,
-        message: ForumMessage,
-        response_type: ResponseType,
-    ) -> str:
-        if response_type is ResponseType.COMMAND:
-            return self._generate_command_response(message)
-
-        if self.ai_response_generator is None:
-            self.ai_response_generator = AIResponseGenerator()
-        return self.ai_response_generator.generate(message.content)
-
-    def _generate_command_response(self, message: ForumMessage) -> str:
-        command, params = self._extract_command(message)
+    def generate(self, content: str) -> str:
+        command, params = self._extract_command(content)
 
         if command == "help":
             return self._generate_help_response()
@@ -40,8 +20,8 @@ class ResponseGenerator:
 
         return f"Unknown command: {self.config.command_symbol}{command}"
 
-    def _extract_command(self, message: ForumMessage) -> tuple[str, list[str]]:
-        _, content_after_mention = message.content.split(
+    def _extract_command(self, content: str) -> tuple[str, list[str]]:
+        _, content_after_mention = content.split(
             self.config.at_bot,
             maxsplit=1,
         )
@@ -68,20 +48,32 @@ class ResponseGenerator:
 
         ticker = params[0].upper()
         try:
-            quote = self.quote_fetcher(ticker)
+            info = yf.Ticker(ticker).fast_info
+            price = float(info.last_price)
+            previous_close = float(info.previous_close)
+            open_price = float(info.open)
+            high = float(info.day_high)
+            low = float(info.day_low)
+            volume = float(info.last_volume)
+
+            values = (price, previous_close, open_price, high, low, volume)
+            if not all(math.isfinite(value) for value in values):
+                raise ValueError("Incomplete market data")
+            if previous_close == 0:
+                raise ValueError("Invalid previous close")
         except Exception as error:
             print(f"Quote lookup failed for {ticker}: {error}", flush=True)
             return f"Quote unavailable for {ticker}."
 
-        change = quote.price - quote.previous_close
-        percent_change = change / quote.previous_close * 100
+        change = price - previous_close
+        percent_change = change / previous_close * 100
         indicator = "📈 " if change > 0 else "📉 " if change < 0 else ""
 
         return (
-            f"{indicator}{quote.ticker} — ${quote.price:.2f} "
+            f"{indicator}{ticker} — ${price:.2f} "
             f"{self._format_signed_currency(change)} ({percent_change:+.2f}%) | "
-            f"O: ${quote.open:.2f} H: ${quote.high:.2f} "
-            f"L: ${quote.low:.2f} Vol: {self._format_volume(quote.volume)}"
+            f"O: ${open_price:.2f} H: ${high:.2f} "
+            f"L: ${low:.2f} Vol: {self._format_volume(int(volume))}"
         )
 
     @staticmethod

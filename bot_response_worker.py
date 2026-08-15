@@ -11,7 +11,7 @@ from db import (
     ResponseType,
 )
 from forum import ForumApi
-from response_generator import ResponseGenerator
+from response_generators import AIResponseGenerator, CommandResponseGenerator
 
 REPLY_DELAY_SECONDS = 3
 
@@ -21,7 +21,8 @@ class BotResponseWorker:
         self.forum_api = forum_api
         self.config = config
         self.db = db
-        self.response_generator = ResponseGenerator(config)
+        self.command_response_generator = CommandResponseGenerator(config)
+        self.ai_response_generator: AIResponseGenerator | None = None
 
     def _fetch_messages(self) -> list[ForumMessage]:
         processed_message = (
@@ -95,10 +96,7 @@ class BotResponseWorker:
                 self.db.commit()
                 continue
 
-            response_text = self.response_generator.generate_response(
-                message,
-                interaction.response_type,
-            )
+            response_text = self._generate_response(message, interaction.response_type)
             if response_count:
                 time.sleep(REPLY_DELAY_SECONDS)
             self.forum_api.reply(
@@ -113,6 +111,18 @@ class BotResponseWorker:
             response_count += 1
 
         return response_count
+
+    def _generate_response(
+        self,
+        message: ForumMessage,
+        response_type: ResponseType,
+    ) -> str:
+        if response_type is ResponseType.COMMAND:
+            return self.command_response_generator.generate(message.content)
+
+        if self.ai_response_generator is None:
+            self.ai_response_generator = AIResponseGenerator()
+        return self.ai_response_generator.generate(message.content)
 
     def run_iteration(self) -> int:
         pending_count = self._generate_pending_interactions()
